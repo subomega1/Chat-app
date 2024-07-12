@@ -1,36 +1,31 @@
-import { useEffect, useState } from 'react'
-import useConversation from '../zustand/useConversation'
-import { toast } from 'react-hot-toast'
+import { useState, useEffect } from 'react';
+import useConversation from '../zustand/useConversation';
 
 const useGetMessages = () => {
+  const { messages, setMessages, selectedConversation } = useConversation();
   const [loading, setLoading] = useState(false);
-  const { messages, setMessages, selectedConversation } = useConversation(); // Corrected typo
 
   useEffect(() => {
-    const getMessages = async () => {
-      setLoading(true)
+    if (!selectedConversation) return;
+
+    const fetchMessages = async () => {
+      setLoading(true);
       try {
-        const res = await fetch(`/api/messages/${selectedConversation._id}`)
-        const data = await res.json()
-        if (data.error) {
-          throw new Error(data.error)
-        }
-        setMessages(data)
+        const response = await fetch(`/api/messages/${selectedConversation._id}`);
+        const data = await response.json();
+        setMessages(Array.isArray(data) ? data : []);
       } catch (error) {
-        toast.error(error.message)
+        console.error(error);
+        setMessages([]); // Ensure messages is an array even if fetch fails
+      } finally {
+        setLoading(false);
       }
-      finally{
-        setLoading(false)
-      }
-      
-    }
-    if (selectedConversation?._id) getMessages()
+    };
 
+    fetchMessages();
+  }, [selectedConversation, setMessages]);
 
+  return { messages, loading };
+};
 
-}, [selectedConversation?._id, setMessages])
-return { messages,loading }
-}
-
-export default useGetMessages
-
+export default useGetMessages;
